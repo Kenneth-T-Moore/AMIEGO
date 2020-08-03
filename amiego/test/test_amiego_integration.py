@@ -16,23 +16,22 @@ import unittest
 
 import numpy as np
 
-from openmdao.api import Problem, IndepVarComp
-from openmdao.drivers.amiego_driver import AMIEGO_driver
-from openmdao.test_suite.components.greiwank import Greiwank
-from openmdao.utils.assert_utils import assert_rel_error
+import openmdao.api as om
+from openmdao.utils.assert_utils import assert_near_equal
+
+from amiego.amiego_driver import AMIEGO_Driver
+from amiego.test.greiwank import Greiwank
 
 
 class TestAMIEGOintegration(unittest.TestCase):
 
     def amiego_greiwank(self):
-        prob = Problem()
+        prob = om.Problem()
         model = prob.model
 
-        model.add_subsystem('p1', IndepVarComp('xC', np.array([0.0, 0.0, 0.0])), promotes=['*'])
-        model.add_subsystem('p2', IndepVarComp('xI', np.array([0, 0, 0])), promotes=['*'])
         model.add_subsystem('comp', Greiwank(num_cont=3, num_int=3), promotes=['*'])
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.cont_opt.options['tol'] = 1e-12
         prob.driver.options['disp'] = True
 
@@ -48,11 +47,19 @@ class TestAMIEGOintegration(unittest.TestCase):
         # prob.driver.sampling = {'xI' : np.array([[0.0], [.76], [1.0]])}
         prob.driver.sampling = {'xI' : samples}
 
-        prob.setup(check=False)
+        prob.setup()
+
+        prob.set_val('xI', np.array([0, 0, 0]))
+        prob.set_val('xC', np.array([0.0, 0.0, 0.0]))
+
         prob.run_driver()
 
         # Optimal solution
-        assert_rel_error(self, prob['f'], 0.0, 1e-5)
-        assert_rel_error(self, prob['xI'][0], 0.0, 1e-5)
-        assert_rel_error(self, prob['xI'][1], 0.0, 1e-5)
-        assert_rel_error(self, prob['xI'][2], 0.0, 1e-5)
+        assert_near_equal(prob['f'], 0.0, 1e-5)
+        assert_near_equal(prob['xI'][0], 0.0, 1e-5)
+        assert_near_equal(prob['xI'][1], 0.0, 1e-5)
+        assert_near_equal(prob['xI'][2], 0.0, 1e-5)
+
+
+if __name__ == "__main__":
+    unittest.main()

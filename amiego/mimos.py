@@ -214,7 +214,7 @@ class MIMOS(Driver):
             if name in self._designvars_discrete:
                 prom_name = name
             else:
-                prom_name = abs2prom[name]
+                prom_name = abs2prom[meta['ivc_source']]
 
             if name in user_bits:
                 val = user_bits[name]

@@ -25,7 +25,7 @@ from amiego.kriging import AMIEGOKrigingSurrogate
 from amiego.mimos import MIMOS
 
 
-class AMIEGO_driver(Driver):
+class AMIEGO_Driver(Driver):
     """
     Driver for AMIEGO (A Mixed Integer Efficient Global Optimization).
 
@@ -37,7 +37,7 @@ class AMIEGO_driver(Driver):
     optimizer slotted in self.cont_opt, which is ScipyOptimizer by
     default.
 
-    AMIEGO_driver supports the following:
+    AMIEGO_Driver supports the following:
         integer_design_vars
 
     Options
@@ -80,7 +80,7 @@ class AMIEGO_driver(Driver):
         """
         Initialize the AMIEGO driver.
         """
-        super(AMIEGO_driver, self).__init__()
+        super(AMIEGO_Driver, self).__init__()
 
         # What we support
         self.supports['inequality_constraints'] = True
@@ -154,7 +154,7 @@ class AMIEGO_driver(Driver):
         problem : <Problem>
             Pointer to the containing problem.
         """
-        super(AMIEGO_driver, self)._setup_driver(problem)
+        super(AMIEGO_Driver, self)._setup_driver(problem)
 
         # Need to clean out anything in the continuous optimizer first.
         cont_opt = self.cont_opt
@@ -173,7 +173,13 @@ class AMIEGO_driver(Driver):
         sampling_abs_names = {}
         i_dvs = []
         for name, data in self.sampling.items():
-            abs_name = prom2abs[name][0]
+
+            # For auto_ivc, keep promoted name.
+            if name in self._designvars:
+                abs_name = name
+            else:
+                abs_name = prom2abs[name][0]
+
             sampling_abs_names[abs_name] = data
             i_dvs.append(abs_name)
         self.sampling = sampling_abs_names
@@ -184,14 +190,24 @@ class AMIEGO_driver(Driver):
         obj_sampling_abs_names = {}
         if self.obj_sampling is not None:
             for name, data in self.obj_sampling.items():
-                abs_name = prom2abs[name][0]
+
+                if name in self._designvars:
+                    abs_name = name
+                else:
+                    abs_name = prom2abs[name][0]
+
                 obj_sampling_abs_names[abs_name] = data
             self.obj_sampling = obj_sampling_abs_names
 
         con_sampling_abs_names = {}
         if self.con_sampling is not None:
             for name, data in self.con_sampling.items():
-                abs_name = prom2abs[name][0]
+
+                if name in self._designvars:
+                    abs_name = name
+                else:
+                    abs_name = prom2abs[name][0]
+
                 con_sampling_abs_names[abs_name] = data
             self.con_sampling = con_sampling_abs_names
 
@@ -279,7 +295,7 @@ class AMIEGO_driver(Driver):
 
         _ = self.cont_opt._update_voi_meta(model)
         _ = self.minlp._update_voi_meta(model)
-        return super(AMIEGO_driver, self)._update_voi_meta(model)
+        return super(AMIEGO_Driver, self)._update_voi_meta(model)
 
     def run(self):
         """

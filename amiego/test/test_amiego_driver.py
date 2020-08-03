@@ -7,11 +7,10 @@ import numpy as np
 import openmdao.api as om
 from openmdao.test_suite.components.branin import Branin, BraninDiscrete
 from openmdao.test_suite.components.three_bar_truss import ThreeBarTruss, ThreeBarTrussVector
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 from openmdao.utils.general_utils import set_pyoptsparse_opt
 
-from amiego.amiego_driver import AMIEGO_driver
-
+from amiego.amiego_driver import AMIEGO_Driver
 
 # check that pyoptsparse is installed
 # if it is, try to use SNOPT but fall back to SLSQP
@@ -34,6 +33,38 @@ class TestAMIEGOdriver(unittest.TestCase):
         prob = om.Problem()
         model = prob.model
 
+        model.add_subsystem('comp', Branin(),
+                            promotes_inputs=[('x0', 'xI'), ('x1', 'xC')])
+
+        model.add_design_var('xI', lower=-5.0, upper=10.0)
+        model.add_design_var('xC', lower=0.0, upper=15.0)
+        model.add_objective('comp.f')
+
+        prob.driver = AMIEGO_Driver()
+        prob.driver.options['disp'] = True
+
+        prob.driver.cont_opt = om.pyOptSparseDriver()
+        prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
+        prob.driver.minlp.options['trace_iter'] = 3
+        prob.driver.minlp.options['trace_iter_max'] = 5
+
+        prob.driver.sampling = {'xI' : np.array([[-5.0], [0.0], [5.0]])}
+
+        prob.setup()
+
+        prob.set_val('xC', 7.5)
+        prob.set_val('xI', 0.0)
+
+        prob.run_driver()
+
+        # Optimal solution
+        assert_near_equal(prob['comp.f'], 0.49398, 1e-5)
+        self.assertTrue(int(prob['xI']) in [3, -3])
+
+    def test_simple_branin_opt_manual_ivc(self):
+        prob = om.Problem()
+        model = prob.model
+
         model.add_subsystem('p1', om.IndepVarComp('xC', 7.5))
         model.add_subsystem('p2', om.IndepVarComp('xI', 0.0))
         model.add_subsystem('comp', Branin())
@@ -45,91 +76,85 @@ class TestAMIEGOdriver(unittest.TestCase):
         model.add_design_var('p1.xC', lower=0.0, upper=15.0)
         model.add_objective('comp.f')
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.options['disp'] = True
 
-        prob.driver.cont_opt = pyOptSparseDriver()
+        prob.driver.cont_opt = om.pyOptSparseDriver()
         prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
         prob.driver.minlp.options['trace_iter'] = 3
         prob.driver.minlp.options['trace_iter_max'] = 5
 
         prob.driver.sampling = {'p2.xI' : np.array([[-5.0], [0.0], [5.0]])}
 
-        prob.setup(check=False)
+        prob.setup()
         prob.run_driver()
 
         # Optimal solution
-        assert_rel_error(self, prob['comp.f'], 0.49398, 1e-5)
+        assert_near_equal(prob['comp.f'], 0.49398, 1e-5)
         self.assertTrue(int(prob['p2.xI']) in [3, -3])
 
     def test_simple_branin_opt_discrete(self):
         prob = om.Problem()
         model = prob.model
 
-        indep = om.IndepVarComp()
-        indep.add_output('xC', val=7.5)
-        indep.add_discrete_output('xI', val=0)
+        model.add_subsystem('comp', BraninDiscrete(),
+                            promotes_inputs=[('x0', 'xI'), ('x1', 'xC')])
 
-        model.add_subsystem('p', indep)
-        model.add_subsystem('comp', BraninDiscrete())
-
-        model.connect('p.xI', 'comp.x0')
-        model.connect('p.xC', 'comp.x1')
-
-        model.add_design_var('p.xI', lower=-5, upper=10)
-        model.add_design_var('p.xC', lower=0.0, upper=15.0)
+        model.add_design_var('xI', lower=-5, upper=10)
+        model.add_design_var('xC', lower=0.0, upper=15.0)
         model.add_objective('comp.f')
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.options['disp'] = False
 
-        prob.driver.cont_opt = pyOptSparseDriver()
+        prob.driver.cont_opt = om.pyOptSparseDriver()
         prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
         prob.driver.minlp.options['trace_iter'] = 3
         prob.driver.minlp.options['trace_iter_max'] = 5
 
-        prob.driver.sampling = {'p.xI' : np.array([[-5.0], [0.0], [5.0]])}
+        prob.driver.sampling = {'xI' : np.array([[-5.0], [0.0], [5.0]])}
 
-        prob.setup(check=False)
+        prob.setup()
+
+        prob.set_val('xC', 7.5)
+        prob.set_val('xI', 0.0)
+
         prob.run_driver()
 
         # Optimal solution
-        assert_rel_error(self, prob['comp.f'], 0.49398, 1e-5)
-        self.assertTrue(int(prob['p.xI']) in [3, -3])
+        assert_near_equal(prob['comp.f'], 0.49398, 1e-5)
+        self.assertTrue(int(prob['xI']) in [3, -3])
 
     def test_simple_branin_opt_mimos(self):
         prob = om.Problem()
         model = prob.model
 
-        indep = om.IndepVarComp()
-        indep.add_output('xC', val=7.5)
-        indep.add_discrete_output('xI', val=0)
+        model.add_subsystem('comp', BraninDiscrete(),
+                            promotes_inputs=[('x0', 'xI'), ('x1', 'xC')])
 
-        model.add_subsystem('p', indep)
-        model.add_subsystem('comp', BraninDiscrete())
-
-        model.connect('p.xI', 'comp.x0')
-        model.connect('p.xC', 'comp.x1')
-
-        model.add_design_var('p.xI', lower=-5, upper=10)
-        model.add_design_var('p.xC', lower=0.0, upper=15.0)
+        model.add_design_var('xI', lower=-5, upper=10)
+        model.add_design_var('xC', lower=0.0, upper=15.0)
         model.add_objective('comp.f')
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.options['disp'] = True
         prob.driver.options['multiple_infill'] = True
 
-        prob.driver.cont_opt = pyOptSparseDriver()
+        prob.driver.cont_opt = om.pyOptSparseDriver()
         prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
 
-        prob.driver.sampling = {'p.xI' : np.array([[-5.0], [0.0], [5.0]])}
+        prob.driver.sampling = {'xI' : np.array([[-5.0], [0.0], [5.0]])}
 
-        prob.setup(check=False)
+        prob.setup()
+
+        prob.set_val('xC', 7.5)
+        prob.set_val('xI', 0.0)
+
         prob.run_driver()
 
         # Optimal solution
-        assert_rel_error(self, prob['comp.f'], 0.49398, 1e-5)
-        self.assertTrue(int(prob['p.xI']) in [3, -3])
+        assert_near_equal(prob['comp.f'], 0.49398, 1e-5)
+        self.assertTrue(int(prob['xI']) in [3, -3])
 
     def test_three_bar_truss(self):
         prob = om.Problem()
@@ -146,7 +171,7 @@ class TestAMIEGOdriver(unittest.TestCase):
         model.add_subsystem('p', ivc, promotes=['*'])
         model.add_subsystem('comp', ThreeBarTruss(), promotes=['*'])
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.cont_opt = om.pyOptSparseDriver()
         prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
 
@@ -176,28 +201,25 @@ class TestAMIEGOdriver(unittest.TestCase):
                                 'mat2' : samples[:, 1].reshape((npt, 1)),
                                 'mat3' : samples[:, 2].reshape((npt, 1))}
 
-        prob.setup(check=False)
+        prob.setup()
 
         prob.run_driver()
 
-        assert_rel_error(self, prob['mass'], 5.287, 1e-3)
-        assert_rel_error(self, prob['mat1'], 3, 1e-5)
-        assert_rel_error(self, prob['mat2'], 3, 1e-5)
+        assert_near_equal(prob['mass'], 5.287, 1e-3)
+        assert_near_equal(prob['mat1'], 3, 1e-5)
+        assert_near_equal(prob['mat2'], 3, 1e-5)
         #Material 3 can be anything
 
     def test_three_bar_truss_preopt(self):
         prob = om.Problem()
         model = prob.model
 
-        ivc = om.IndepVarComp()
-        ivc.add_output('area', np.array([5.0, 5.0, 5.0]), units='cm**2')
-        ivc.add_output('mat', np.array([1, 1, 1]))
-
-        model.add_subsystem('p', ivc, promotes=['*'])
+        model.set_input_defaults('area', np.array([5.0, 5.0, 5.0]), units='cm**2')
+        model.set_input_defaults('mat', np.array([1, 1, 1]))
 
         model.add_subsystem('comp', ThreeBarTrussVector(), promotes=['*'])
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.cont_opt = om.pyOptSparseDriver()
         prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
         prob.driver.options['disp'] = True
@@ -237,27 +259,25 @@ class TestAMIEGOdriver(unittest.TestCase):
         prob.driver.con_sampling = {'stress' : con_samples}
         prob.driver.int_con = ['stress']
 
-        prob.setup(check=False)
+        prob.setup()
 
         prob.run_driver()
 
-        assert_rel_error(self, prob['mass'], 5.287, 1e-3)
-        assert_rel_error(self, prob['mat'][0], 3, 1e-5)
-        assert_rel_error(self, prob['mat'][1], 3, 1e-5)
+        assert_near_equal(prob['mass'], 5.287, 1e-3)
+        assert_near_equal(prob['mat'][0], 3, 1e-5)
+        assert_near_equal(prob['mat'][1], 3, 1e-5)
         # Material 3 can be anything
 
     def test_three_bar_truss_preopt_mimos(self):
         prob = om.Problem()
         model = prob.model
 
-        ivc = om.IndepVarComp()
-        ivc.add_output('area', np.array([5.0, 5.0, 5.0]), units='cm**2')
-        ivc.add_output('mat', np.array([1, 1, 1]))
+        model.set_input_defaults('area', np.array([5.0, 5.0, 5.0]), units='cm**2')
+        model.set_input_defaults('mat', np.array([1, 1, 1]))
 
-        model.add_subsystem('p', ivc, promotes=['*'])
         model.add_subsystem('comp', ThreeBarTrussVector(), promotes=['*'])
 
-        prob.driver = AMIEGO_driver()
+        prob.driver = AMIEGO_Driver()
         prob.driver.cont_opt = om.pyOptSparseDriver()
         prob.driver.cont_opt.options['optimizer'] = 'SNOPT'
         prob.driver.options['disp'] = True
@@ -298,13 +318,13 @@ class TestAMIEGOdriver(unittest.TestCase):
         prob.driver.con_sampling = {'stress' : con_samples}
         prob.driver.int_con = ['stress']
 
-        prob.setup(check=False)
+        prob.setup()
 
         prob.run_driver()
 
-        assert_rel_error(self, prob['mass'], 5.287, 1e-3)
-        assert_rel_error(self, prob['mat'][0], 3, 1e-5)
-        assert_rel_error(self, prob['mat'][1], 3, 1e-5)
+        assert_near_equal(prob['mass'], 5.287, 1e-3)
+        assert_near_equal(prob['mat'][0], 3, 1e-5)
+        assert_near_equal(prob['mat'][1], 3, 1e-5)
 
 
 if __name__ == "__main__":
