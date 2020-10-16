@@ -64,8 +64,9 @@ class AMIEGO_Driver(Driver):
         Cache of local sizes for each design variable.
     i_size : int
         Number of integer design variables.
-    minlp : <Branch_and_Bound>
-        Slot for Branch and Bound subdriver.
+    minlp : <Driver>
+        Slot for discrete subdriver for the integer problem. Branch_and_Bound is the default.
+        Only MIMOS and Branch_and_Bound are valid.
     n_train : int
         Number of training points for surrogate.
     obj_sampling : dict(list)
