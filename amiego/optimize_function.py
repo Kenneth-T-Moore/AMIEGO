@@ -71,11 +71,11 @@ def snopt_opt(objfun, desvar, lb, ub, ncon=None, title=None, options=None,
     _tmp = __import__('pyoptsparse', globals(), locals(), [OPTIMIZER], 0)
     opt = getattr(_tmp, OPTIMIZER)()
 
-    if options:
+    if OPTIMIZER == 'SNOPT':
+
         for name, value in options.items():
             opt.setOption(name, value)
 
-    if OPTIMIZER == 'SNOPT':
         opt.setOption('Major iterations limit', 100)
         opt.setOption('Verify level', -1)
         opt.setOption('iSumm', 0)
@@ -89,13 +89,23 @@ def snopt_opt(objfun, desvar, lb, ub, ncon=None, title=None, options=None,
         opt.setOption('MAXIT', 100)
     elif OPTIMIZER == 'CONMIN':
         opt.setOption('ITMAX', 100)
+    elif OPTIMIZER == 'COBYLA':
+        for name, value in options.items():
+            opt.setOption(name, value)
+
 
     sol = opt(opt_prob, sens=sens, sensStep=1.0e-6)
     # print(sol)
 
     x = sol.getDVs()['x']
     f = sol.objectives['obj'].value
-    success_flag = sol.optInform['value'] < 2
-    msg = sol.optInform['text']
+    try:
+        success_flag = sol.optInform['value'] < 2
+        msg = sol.optInform['text']
+
+    except KeyError:
+        # optimizers other than pySNOPT may not populate this dict
+        success_flag = True
+        msg = 'No Status Returned'
 
     return x, f, success_flag, msg
