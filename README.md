@@ -16,7 +16,7 @@ After cloning the repository, enter the AMIEGO directory while in an activated O
 
 ## Documentation
 
-See the examples directory for several examples of how to use this plugin.
+See the `examples` directory for several examples of how to use this plugin.
 
 
 ## References
