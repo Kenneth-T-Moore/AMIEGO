@@ -13,6 +13,8 @@ After cloning the repository, enter the AMIEGO directory while in an activated O
 
     pip install -e .
 
+This will make import available from the `amiego` package.
+
 
 ## Documentation
 
