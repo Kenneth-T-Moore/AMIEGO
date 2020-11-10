@@ -9,7 +9,7 @@ details on the theory and the algorithm implementation can be found in the refer
 
 ## Installation
 
-After cloning the repository, enter the AMIEGO directory while in an activated OpenMDAO environment and type
+After cloning the repository, enter the AMIEGO directory while in an activated OpenMDAO environment and type:
 
     pip install -e .
 
