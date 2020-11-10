@@ -2,6 +2,11 @@
 
 OpenMDAO Driver plugin for AMIEGO (A Mixed Integer Efficient Global Optimization)
 
+AMIEGO is an experimental OpenMDAO driver for solving mixed-integer optimization problems. The
+approach combines gradient-based optimization, to optimize the continuous design space, together
+with an efficient global optimization (EGO), for exploration in the integer design space. More
+details on the theory and the algorithm implementation can be found in the references below.
+
 ## Installation
 
 After cloning the repository, enter the AMIEGO directory while in an activated OpenMDAO environment and type
