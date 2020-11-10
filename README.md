@@ -21,6 +21,8 @@ See the examples directory for several examples of how to use this plugin.
 
 ## References
 
-[Monolithic Approach for Next-Generation Aircraft Design Considering Airline Operations and Economics](http://openmdao.org/pubs/roy_amiego_2019.pdf)
-[A Mixed Integer Efficient Global Optimization Algorithm with Multiple Infill Strategy - Applied to a Wing Topology Optimization Problem](http://openmdao.org/pubs/roy_scitech_2019_submitted.pdf)
-[Next Generation Aircraft Design Considering Airline Operations and Economics](http://openmdao.org/pubs/roy_amiego_2018.pdf)
+* [Monolithic Approach for Next-Generation Aircraft Design Considering Airline Operations and Economics](http://openmdao.org/pubs/roy_amiego_2019.pdf)
+
+* [A Mixed Integer Efficient Global Optimization Algorithm with Multiple Infill Strategy - Applied to a Wing Topology Optimization Problem](http://openmdao.org/pubs/roy_scitech_2019_submitted.pdf)
+
+* [Next Generation Aircraft Design Considering Airline Operations and Economics](http://openmdao.org/pubs/roy_amiego_2018.pdf)
